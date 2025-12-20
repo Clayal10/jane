@@ -1,5 +1,5 @@
 all:
-	gcc -c -fPIC src/*.c
+	gcc -c -fPIC -std=c99 src/*.c
 	gcc -shared -o libjane.so *.o
 
 install:
