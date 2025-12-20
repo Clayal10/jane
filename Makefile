@@ -1,14 +1,13 @@
 all:
 	gcc -c -fPIC src/*.c
 	gcc -shared -o libjane.so *.o
-	mkdir build
-	cp libjane.so build/
 
 install:
 	cp libjane.so /usr/lib/
-	mkdir /usr/include/jane/
+	if [ ! -d "/usr/include/jane/" ]; then \
+        mkdir /usr/include/jane/ ; fi
 	cp -r include/* /usr/include/jane/
 
 clean:
-	rm *.so *.o
-	rm -r build/
+	rm *.o
+	rm *.so
