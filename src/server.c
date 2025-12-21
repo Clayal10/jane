@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "../include/http.h"
 #include "client.h"
 #include "endpoint.h"
@@ -15,27 +16,32 @@ struct http_server{
     char* hostname;
     uint16_t port;
     endpoint_node **head;
+    pthread_mutex_t mu;
 };
 
 http_server* http_new_server(char* hostname, uint16_t port){
     http_server *server = (http_server*)malloc(sizeof(http_server));
     server->hostname = malloc(strlen(hostname)+1);
     strcpy(server->hostname, hostname);
+    pthread_mutex_init(&server->mu, NULL);
     server->port = port;
     return server;
 }
 
 void http_free_server(http_server *server){
     if(!server){
+        perror("Error: 'server' is null");
         return;
     }
     free(server->hostname);
+    pthread_mutex_destroy(&server->mu);
     free(server);
 }
 
 int http_listen_and_serve(http_server *server){
     if(!server){
         perror("Error: 'server' cannot be null");
+        return;
     }
 
     struct sockaddr_in socket_address;
@@ -80,9 +86,12 @@ int http_listen_and_serve(http_server *server){
 
 void *http_handle_client(void *c){
     http_client *client = (http_client*)c;
+    if(!client->server){
+        return;
+    }
     for(;;){
-        // read http request
-        write(client->fd, "Hello\n", 6); // for now.
-        break;
+        // Need to figure out the HTTP protocol.
+        char header[1024];
+        size_t count = read(client->fd, header, 1024);
     }
 }
