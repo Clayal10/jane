@@ -89,9 +89,17 @@ void *http_handle_client(void *c){
     if(!client->server){
         return;
     }
+    size_t buffer_len = 2048;
+    char *buffer = malloc(buffer_len);
     for(;;){
-        // Need to figure out the HTTP protocol.
-        char header[1024];
-        size_t count = read(client->fd, header, 1024);
+        size_t count = read(client->fd, buffer, buffer_len);
+        if(!count){
+            break;
+        }
+        if(count == -1){
+            printf("Error: %s\n", strerror(errno));
+            break;
+        }
     }
+    free(buffer);
 }
