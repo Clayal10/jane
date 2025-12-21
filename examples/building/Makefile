@@ -1,7 +1,7 @@
 EXE = example
 
-all:
-	gcc main.c -L /usr/local/lib -ljane -o $(EXE)
+all: # Do we need `-L /usr/local/jane`
+	gcc main.c -ljane -o $(EXE)
 
 test:
 	./$(EXE)

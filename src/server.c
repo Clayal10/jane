@@ -1,13 +1,39 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/ip.h>
+#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
 #include "../include/http.h"
+#include "client.h"
+#include "endpoint.h"
 
-int http_listen_and_serve(struct http_server *server){
+struct http_server{
+    char* hostname;
+    uint16_t port;
+    endpoint_node **head;
+};
+
+http_server* http_new_server(char* hostname, uint16_t port){
+    http_server *server = (http_server*)malloc(sizeof(http_server));
+    server->hostname = malloc(strlen(hostname)+1);
+    strcpy(server->hostname, hostname);
+    server->port = port;
+    return server;
+}
+
+void http_free_server(http_server *server){
+    if(!server){
+        return;
+    }
+    free(server->hostname);
+    free(server);
+}
+
+int http_listen_and_serve(http_server *server){
     if(!server){
         perror("Error: 'server' cannot be null");
     }
@@ -52,8 +78,8 @@ int http_listen_and_serve(struct http_server *server){
     }
 }
 
-void *http_handle_client(void *http_client){
-    struct http_client *client = (struct http_client*)http_client;
+void *http_handle_client(void *c){
+    http_client *client = (http_client*)c;
     for(;;){
         // read http request
         write(client->fd, "Hello\n", 6); // for now.

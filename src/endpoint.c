@@ -1,5 +1,5 @@
-#include "../include/endpoint.h"
+#include "endpoint.h"
 
-void http_endpoint_push(struct endpoint_node **head, char* ep){
+void http_endpoint_push(endpoint_node **head, char* ep){
     
 }
