@@ -13,11 +13,9 @@ char* decode_http(char* buffer, http_request_frame *frame){
     size_t buffer_len = strlen(buffer);
     http_request_header_frame header;
     int i;
-    printf("%s\n", buffer);
     for(i=0; i<buffer_len-3; i++){
-        //printf("%d %d %d %d\n", (int)buffer[i], (int)buffer[i+1], (int)buffer[i+2], (int)buffer[i+3]);
         if((int)buffer[i] == CR && (int)buffer[i+1] == NL && (int)buffer[i+2] == CR && (int)buffer[i+3] == NL){
-            printf("HERE\n");
+            printf("here\n");
             decode_http_header(&header, buffer, i);
             break;
         }
@@ -27,20 +25,23 @@ char* decode_http(char* buffer, http_request_frame *frame){
 static void decode_http_header(http_request_header_frame *header, char* buffer, size_t len){
     int i;
     for(i=0; i<len-1; i++){
-        if(buffer+i == "\r" && buffer+i == "\n"){
-            break;
+        if((int)buffer[i] == CR && (int)buffer[i+1] == NL){
+            goto success;
         }
     }
+    printf("No lines.\n");
+    return;
+success:
     
     // Could be off by one?
     char method[i];
     strncpy(method, buffer, i-1);
     method[i-1] = 0;
-    if(method == "G"){
+    if((int)method[0] == G){
         header->method = GET;
         int j;
         for(j=4; method+j; j++){
-            if(method+j == " "){
+            if((int)method[j] == SPACE){
                 break;
             }
         }

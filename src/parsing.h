@@ -1,5 +1,7 @@
 #define CR 13
 #define NL 10
+#define SPACE 32
+#define G 71
 
 typedef enum{
     GET,
