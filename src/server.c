@@ -100,6 +100,15 @@ void *http_handle_client(void *c){
             printf("Error: %s\n", strerror(errno));
             break;
         }
+        // 1. Parse HTTP request
+        // 2. Get the function corresponding to the endpoint.
+        // 3. Create an http_request with the proper header and body previously parsed.
+        // 4. Give the function an instance of an http_response_writer that can write back to
+        //    this client_fd.
     }
     free(buffer);
+}
+
+void http_handle_func(http_server *server, char* endpoint, void(*func)(http_response_writer*, http_request*)){
+    // Create an endpoint node and push it on the list. 
 }

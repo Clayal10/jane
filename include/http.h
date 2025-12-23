@@ -34,7 +34,7 @@ void http_free_server(http_server *server);
 int http_listen_and_serve(http_server *server);
 // When 'endpoint' is hit by a client, 'func' will be ran. Parameters for the function
 // contain an http writer that you need for writing and reading via HTTP as well as the request
-// given by the user.
+// given by the client.
 void http_handle_func(http_server *server, char* endpoint, void(*func)(http_response_writer*, http_request*));
 
 #endif

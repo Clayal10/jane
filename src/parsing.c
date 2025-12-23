@@ -3,60 +3,73 @@
 #include <stdio.h>
 #include "parsing.h"
 
-static void decode_http_header(http_request_header_frame *header, char* buffer, size_t len);
-
 char* decode_http(char* buffer, http_request_frame *frame){
     if(!frame){
         perror("HTTP request frame cannot be null");
         return 0;
     }
     size_t buffer_len = strlen(buffer);
-    http_request_header_frame header;
+    frame->header = malloc(sizeof(http_request_header_frame));
     int i;
     for(i=0; i<buffer_len-3; i++){
-        if((int)buffer[i] == CR && (int)buffer[i+1] == NL && (int)buffer[i+2] == CR && (int)buffer[i+3] == NL){
-            printf("here\n");
-            decode_http_header(&header, buffer, i);
+        if(buffer[i] == ASCII_CR && buffer[i+1] == ASCII_LF && buffer[i+2] == ASCII_CR && buffer[i+3] == ASCII_LF){
+            decode_http_header(frame->header, buffer, i);
             break;
         }
     }
+    /* Potentially parse body */
 }
 
-static void decode_http_header(http_request_header_frame *header, char* buffer, size_t len){
-    int i;
-    for(i=0; i<len-1; i++){
-        if((int)buffer[i] == CR && (int)buffer[i+1] == NL){
-            goto success;
+void decode_http_header(http_request_header_frame *header, char* buffer, size_t len){
+    /* First ASCII line */
+    int method_end = 0;
+    for(int i=0; i<len-1; i++){
+        if(buffer[i] == ASCII_CR && buffer[i+1] == ASCII_LF){
+            method_end = i;
+            break;
         }
     }
-    printf("No lines.\n");
-    return;
-success:
-    
-    // Could be off by one?
-    char method[i];
-    strncpy(method, buffer, i-1);
-    method[i-1] = 0;
-    if((int)method[0] == G){
+    if(!method_end){
+        perror("No valid ascii lines found in the HTTP buffer");
+        return;
+    }
+
+    char method[method_end+1];
+    memcpy(method, buffer, method_end);
+    method[method_end] = 0;
+    int offset;
+
+    if(method[0] == ASCII_G){
         header->method = GET;
-        int j;
-        for(j=4; method+j; j++){
-            if((int)method[j] == SPACE){
-                break;
-            }
-        }
-        char endpoint[j-4];
-        strncpy(endpoint, &method[4], j-5);
-        endpoint[j-5] = 0;
-        header->endpoint = endpoint;
+        offset = 4;
     }else{
+        // Other methods.
         return;
     }
-
-    if(len < i+2){
-        return;
+    int endpoint_end;
+    for(endpoint_end=offset; endpoint_end<method_end; endpoint_end++){
+        if(method[endpoint_end] == ASCII_SPACE){
+            break;
+        }
     }
-    buffer = buffer + (i+2); // should put us beyond the \n and we are supposed to have more lines.
+    header->endpoint = malloc(endpoint_end-offset+1);
+    memcpy(header->endpoint, &method[offset], endpoint_end-offset);
+    header->endpoint[endpoint_end-offset] = 0;
+    /* Need to parse host and content-type at least*/
 }
 
-
+void free_http_header(http_request_header_frame *header){
+    if(!header){
+        return;
+    }
+    if(header->endpoint){
+        free(header->endpoint);
+    }
+    if(header->endpoint){
+        free(header->host);
+    }
+    if(header->endpoint){
+        free(header->content_type);
+    }
+    free(header);
+}
