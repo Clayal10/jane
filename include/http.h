@@ -27,7 +27,7 @@ typedef struct http_response_writer{
 } http_response_writer;
 
 // The new HTTP server is allocated on the heap and must be freed by calling http_free_server(server);
-http_server *http_new_server(char* hostname, uint16_t port);
+http_server *http_new_server(uint16_t port);
 void http_free_server(http_server *server);
 // http_listen_and_serve will start the http server that will execute functions on given endpoints from
 // the function http_handle_func.

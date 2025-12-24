@@ -13,18 +13,16 @@
 #include "endpoint.h"
 
 struct http_server{
-    char* hostname;
     uint16_t port;
-    endpoint_node **head;
+    endpoint_node *head;
     pthread_mutex_t mu;
 };
 
-http_server* http_new_server(char* hostname, uint16_t port){
+http_server* http_new_server(uint16_t port){
     http_server *server = (http_server*)malloc(sizeof(http_server));
-    server->hostname = malloc(strlen(hostname)+1);
-    strcpy(server->hostname, hostname);
     pthread_mutex_init(&server->mu, NULL);
     server->port = port;
+    server->head = NULL; // Do I need to do this?
     return server;
 }
 
@@ -33,7 +31,7 @@ void http_free_server(http_server *server){
         perror("Error: 'server' is null");
         return;
     }
-    free(server->hostname);
+    http_free_all_endpoints(&server->head);
     pthread_mutex_destroy(&server->mu);
     free(server);
 }
@@ -41,7 +39,7 @@ void http_free_server(http_server *server){
 int http_listen_and_serve(http_server *server){
     if(!server){
         perror("Error: 'server' cannot be null");
-        return;
+        return 0;
     }
 
     struct sockaddr_in socket_address;
@@ -87,7 +85,7 @@ int http_listen_and_serve(http_server *server){
 void *http_handle_client(void *c){
     http_client *client = (http_client*)c;
     if(!client->server){
-        return;
+        return 0;
     }
     size_t buffer_len = 2048;
     char *buffer = malloc(buffer_len);
@@ -105,10 +103,13 @@ void *http_handle_client(void *c){
         // 3. Create an http_request with the proper header and body previously parsed.
         // 4. Give the function an instance of an http_response_writer that can write back to
         //    this client_fd.
+        // Example:
+        // endpoint_node* ep = http_endpoint_get(&server->head, endpoint_string);
+        // ep->func(tcp_socket_wrapper, parsed_http_request);
     }
     free(buffer);
 }
 
 void http_handle_func(http_server *server, char* endpoint, void(*func)(http_response_writer*, http_request*)){
-    // Create an endpoint node and push it on the list. 
+    http_endpoint_push(&server->head, endpoint, func);    
 }
