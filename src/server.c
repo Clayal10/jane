@@ -11,6 +11,7 @@
 #include "../include/http.h"
 #include "client.h"
 #include "endpoint.h"
+#include "parsing.h"
 
 struct http_server{
     uint16_t port;
@@ -98,6 +99,12 @@ void *http_handle_client(void *c){
             printf("Error: %s\n", strerror(errno));
             break;
         }
+        http_request_frame frame;
+        decode_http(buffer, &frame);
+        // TODO do a lot more checking here, read more if needed.
+        endpoint_node* ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
+        ep->func(0, 0);
+        free_http_header(frame.header);
         // 1. Parse HTTP request
         // 2. Get the function corresponding to the endpoint.
         // 3. Create an http_request with the proper header and body previously parsed.
