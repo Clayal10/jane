@@ -35,15 +35,15 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     memcpy(method, buffer, method_end);
     method[method_end] = 0;
     int offset;
-
-    /* Only supports GET */
-    if(method[0] != ASCII_G){
-        return;
+    for(;offset<method_end; offset++){
+        if(method[offset] == ASCII_SPACE){
+            offset++;
+            break;
+        }
     }
-    header->method = GET;
-    offset = 4;
-    int endpoint_end;
-    for(endpoint_end=offset; endpoint_end<method_end; endpoint_end++){
+
+    int endpoint_end = offset;
+    for(; endpoint_end<method_end; endpoint_end++){
         if(method[endpoint_end] == ASCII_SPACE){
             break;
         }
@@ -67,35 +67,70 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
             break;
         }
     }
+    
     offset += 6; // Skip 'HOST: '
     header->host = malloc(host_end-offset+1);
     memcpy(header->host, &buffer[offset], host_end-offset);
     header->host[host_end-offset] = 0;
+    offset += host_end-offset;
 
-    // Need to get to 'Content-type'
-    // offset += 2; // skip crlf
-    // const char* content_type = "Content-Type: ";
-    // int content_type_len = strlen(content_type);
-    // for(;offset<len-content_type_len;offset++){
-    //     if(memcmp(&buffer[offset], content_type, content_type_len) == 0){
-    //         break;
-    //     }
-    // }
-    // Used for POST
-    //offset += content_type_len; // skip 'Content-Type: '
-    //int content_type_end = offset;
-    //for(;content_type_end < len-2;content_type_end++){
-    //    if(buffer[content_type_end] == ASCII_CR && buffer[content_type_end] == ASCII_LF){
-    //        break;
-    //    }
-    //}
-    //header->content_type = malloc(content_type_end-offset+1);
-    //memcpy(header->content_type, &buffer[offset], content_type_end-offset);
-    //header->content_type[content_type_end-offset] = 0;
+    switch(method[0]){
+    case ASCII_C:
+        header->method = CONNECT;
+        break;
+    case ASCII_D:
+        header->method = DELETE;
+        break;
+    case ASCII_G:
+        header->method = GET;
+        break;
+    case ASCII_H:
+        header->method = HEAD;
+        break;
+    case ASCII_O:
+        header->method = OPTIONS;
+        break;
+    case ASCII_P:
+        if(method[1] == ASCII_O){
+            header->method = POST;
+            decode_post_request(header, buffer, len, offset);
+        }else if(method[1] == ASCII_A){
+            header->method = PATCH;
+        }else{
+            header->method = PUT;
+        }
+        break;
+    case ASCII_T:
+        header->method = TRACE;
+        break;
+    }
+
+    
 }
 
-void decode_get_request(http_request_header_frame *header, char* buffer, size_t len){
-    
+void decode_post_request(http_request_header_frame *header, char* buffer, size_t len, int offset){
+    // Need to get to 'Content-type'
+     offset += 2; // skip crlf
+     const char* content_type = "Content-Type: ";
+     int content_type_len = strlen(content_type);
+     for(;offset<len-content_type_len;offset++){
+         if(memcmp(&buffer[offset], content_type, content_type_len) == 0){
+             break;
+         }
+     }
+    // Used for POST
+    offset += content_type_len; // skip 'Content-Type: '
+    int content_type_end = offset;
+    for(;content_type_end < len-2;content_type_end++){
+        if(buffer[content_type_end] == ASCII_CR && buffer[content_type_end] == ASCII_LF){
+            break;
+        }
+    }
+    // If these fields didn't appear for whatever reason, this section would just allocate 1 
+    // byte for a lone null terminator.
+    header->content_type = malloc(content_type_end-offset+1);
+    memcpy(header->content_type, &buffer[offset], content_type_end-offset);
+    header->content_type[content_type_end-offset] = 0;
 }
 
 void free_http_header(http_request_header_frame *header){

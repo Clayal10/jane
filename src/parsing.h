@@ -1,3 +1,8 @@
+#ifndef PARSING_H
+#define PARSING_H
+
+#include <stddef.h>
+
 #define ASCII_NUL 0x00  /* Null */
 #define ASCII_SOH 0x01  /* Start of Heading */
 #define ASCII_STX 0x02  /* Start of Text */
@@ -142,8 +147,15 @@
 #define ASCII_TILDE   0x7E  /* ~ */
 
 typedef enum{
-    GET,
-    POST
+    CONNECT,
+    DELETE,
+    GET, // Supported
+    HEAD,
+    OPTIONS,
+    PATCH,
+    POST,
+    PUT,
+    TRACE,
 } Method;
 
 // Fields only include the fields required by the server to complete a response.
@@ -172,8 +184,10 @@ typedef struct http_respones_frame{
 // If a header frame can be parsed, the offset of the end of that request is returned.
 int decode_http(char* buf, http_request_frame *frame);
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len);
-void decode_get_request(http_request_header_frame *header, char* buffer, size_t len);
+void decode_post_request(http_request_header_frame *header, char* buffer, size_t len);
 // Frees the strings inside of the object.
 void free_http_header(http_request_header_frame *header);
 // Prepares response for a buffer of bytes to send over http back to the client.
 char* encode_http(http_response_frame response);
+
+#endif
