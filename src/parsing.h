@@ -146,6 +146,11 @@
 #define ASCII_RBRACE  0x7D  /* } */
 #define ASCII_TILDE   0x7E  /* ~ */
 
+extern const char* field_host;
+extern const char* field_content_type;
+extern const char* field_content_length;
+extern const char* field_accept;
+
 typedef enum{
     CONNECT,
     DELETE,

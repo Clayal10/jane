@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include "parsing.h"
 
+const char* field_host = "Host: ";
+const char* field_content_type = "Content-Type: ";
+const char* field_content_length = "Content-Length: ";
+const char* field_accept = "Accept: ";
+
 int decode_http(char* buffer, http_request_frame *frame){
     if(!frame){
         perror("HTTP request frame cannot be null");
@@ -23,7 +28,6 @@ int decode_http(char* buffer, http_request_frame *frame){
 
 // We know that 'buffer' contains all necessary bytes for the header if called from decode_http
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len){
-    // TODO refactor to parse fields in any order.
     int method_end = 0;
     for(;method_end<len-1; method_end++){
         if(buffer[method_end] == ASCII_CR && buffer[method_end+1] == ASCII_LF){
@@ -52,28 +56,6 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     memcpy(header->endpoint, &method[offset], endpoint_end-offset);
     header->endpoint[endpoint_end-offset] = 0;
 
-    /* Need to parse host, content-length and content-type at least*/
-    // Skip 'HTTP/1.1 to get to 'Host'
-    offset = endpoint_end;
-    for(;offset < len-2;offset++){
-        if(buffer[offset] == ASCII_CR && buffer[offset+1] == ASCII_LF){
-            offset += 2;
-            break;
-        }
-    }
-    int host_end = offset;
-    for(;host_end < len-2; host_end++){
-        if(buffer[host_end] == ASCII_CR && buffer[host_end+1] == ASCII_LF){
-            break;
-        }
-    }
-    
-    offset += 6; // Skip 'HOST: '
-    header->host = malloc(host_end-offset+1);
-    memcpy(header->host, &buffer[offset], host_end-offset);
-    header->host[host_end-offset] = 0;
-    offset += host_end-offset;
-
     switch(method[0]){
     case ASCII_C:
         header->method = CONNECT;
@@ -93,7 +75,6 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     case ASCII_P:
         if(method[1] == ASCII_O){
             header->method = POST;
-            decode_post_request(header, buffer, len, offset);
         }else if(method[1] == ASCII_A){
             header->method = PATCH;
         }else{
@@ -104,31 +85,45 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
         header->method = TRACE;
         break;
     }
-}
 
-void decode_post_request(http_request_header_frame *header, char* buffer, size_t len, int offset){
-    // Need to get to 'Content-type'
-     offset += 2; // skip crlf
-     const char* content_type = "Content-Type: ";
-     int content_type_len = strlen(content_type);
-     for(;offset<len-content_type_len;offset++){
-         if(memcmp(&buffer[offset], content_type, content_type_len) == 0){
-             break;
-         }
-     }
-    // Used for POST
-    offset += content_type_len; // skip 'Content-Type: '
-    int content_type_end = offset;
-    for(;content_type_end < len-2;content_type_end++){
-        if(buffer[content_type_end] == ASCII_CR && buffer[content_type_end+1] == ASCII_LF){
-            break;
+    /* Need to parse host, content-length and content-type at least */
+    // Skip 'HTTP/1.1'
+    
+    size_t field_host_len = strlen(field_host);
+    size_t field_content_type_len = strlen(field_content_type);
+    size_t field_content_length_len = strlen(field_content_length);
+
+    offset = method_end + 2; // puts us at the start of the first field after endpoint.
+    for(;offset<len;){
+        int end = offset;
+        for(;;end++){
+            if(buffer[end] == ASCII_CR && buffer[end+1] == ASCII_LF){
+                break;
+            }
         }
+        // offset is at the start of the string, end is the index of '\r'.
+        if(!memcmp(&buffer[offset], field_host, field_host_len)){
+            offset += field_host_len;
+            header->host = malloc(end-offset+1);
+            memcpy(header->host, &buffer[offset], end-offset);
+            header->host[end-offset] = 0;
+        }
+        else if(!memcmp(&buffer[offset], field_content_type, field_content_type_len)){
+            offset += field_content_type_len;
+            header->content_type = malloc(end-offset+1);
+            memcpy(header->content_type, &buffer[offset], end-offset);
+            header->content_type[end-offset] = 0;
+        }
+        else if(!memcmp(&buffer[offset], field_content_length, field_content_length_len)){
+            offset += field_content_length_len;
+            char content_length[end-offset+1];
+            memcpy(content_length, &buffer[offset], end-offset);
+            content_length[end-offset] = 0;
+            header->content_length = atoi(content_length);
+        }
+
+        offset = end + 2;
     }
-    // If these fields didn't appear for whatever reason, this section would just allocate 1 
-    // byte for a lone null terminator.
-    header->content_type = malloc(content_type_end-offset+1);
-    memcpy(header->content_type, &buffer[offset], content_type_end-offset);
-    header->content_type[content_type_end-offset] = 0;
 }
 
 void free_http_header(http_request_header_frame *header){
