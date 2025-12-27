@@ -19,11 +19,31 @@ int decode_http(char* buffer, http_request_frame *frame){
     for(i=0; i<buffer_len-3; i++){
         if(buffer[i] == ASCII_CR && buffer[i+1] == ASCII_LF && buffer[i+2] == ASCII_CR && buffer[i+3] == ASCII_LF){
             decode_http_header(frame->header, buffer, i);
-            return i+4+frame->header->content_length;
+            i += 4; // Skip to start of the payload
+            goto success;
         }
     }
-    // TODO parse payload
+
+    // need more data
     return -1;
+
+success:
+
+    int offset = i;
+    // All methods that don't have content_length.
+    switch(frame->header->method){
+    case GET:
+        return offset;
+    default:
+        break;
+    }
+
+    if(buffer_len < offset+frame->header->content_length){
+        return -1;
+    }
+    
+    int end = offset;
+
 }
 
 // We know that 'buffer' contains all necessary bytes for the header if called from decode_http
