@@ -14,7 +14,7 @@ int decode_http(char* buffer, http_request_frame *frame){
     for(i=0; i<buffer_len-3; i++){
         if(buffer[i] == ASCII_CR && buffer[i+1] == ASCII_LF && buffer[i+2] == ASCII_CR && buffer[i+3] == ASCII_LF){
             decode_http_header(frame->header, buffer, i);
-            return i;
+            return i+4+frame->header->content_length;
         }
     }
     // TODO parse payload
@@ -23,7 +23,7 @@ int decode_http(char* buffer, http_request_frame *frame){
 
 // We know that 'buffer' contains all necessary bytes for the header if called from decode_http
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len){
-    /* First ASCII line */
+    // TODO refactor to parse fields in any order.
     int method_end = 0;
     for(;method_end<len-1; method_end++){
         if(buffer[method_end] == ASCII_CR && buffer[method_end+1] == ASCII_LF){
@@ -34,7 +34,7 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     char method[method_end+1];
     memcpy(method, buffer, method_end);
     method[method_end] = 0;
-    int offset;
+    int offset = 0;
     for(;offset<method_end; offset++){
         if(method[offset] == ASCII_SPACE){
             offset++;
@@ -104,8 +104,6 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
         header->method = TRACE;
         break;
     }
-
-    
 }
 
 void decode_post_request(http_request_header_frame *header, char* buffer, size_t len, int offset){
@@ -122,7 +120,7 @@ void decode_post_request(http_request_header_frame *header, char* buffer, size_t
     offset += content_type_len; // skip 'Content-Type: '
     int content_type_end = offset;
     for(;content_type_end < len-2;content_type_end++){
-        if(buffer[content_type_end] == ASCII_CR && buffer[content_type_end] == ASCII_LF){
+        if(buffer[content_type_end] == ASCII_CR && buffer[content_type_end+1] == ASCII_LF){
             break;
         }
     }

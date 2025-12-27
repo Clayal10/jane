@@ -54,6 +54,9 @@ void unit_test_parsing(){
     printf("Method: %d\nEndpoint: %s\nHost: %s\n", 
         frame.header->method, frame.header->endpoint, frame.header->host);
     free_http_header(frame.header);
+    decode_http(string_post_request, &frame);
+    printf("%d\n%s\n%s\n%d\n%s\n", 
+        frame.header->method, frame.header->endpoint, frame.header->host, frame.header->content_length, frame.header->content_type);
 }
 
 int main(){

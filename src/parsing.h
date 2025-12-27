@@ -184,7 +184,7 @@ typedef struct http_respones_frame{
 // If a header frame can be parsed, the offset of the end of that request is returned.
 int decode_http(char* buf, http_request_frame *frame);
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len);
-void decode_post_request(http_request_header_frame *header, char* buffer, size_t len);
+void decode_post_request(http_request_header_frame *header, char* buffer, size_t len, int offset);
 // Frees the strings inside of the object.
 void free_http_header(http_request_header_frame *header);
 // Prepares response for a buffer of bytes to send over http back to the client.
