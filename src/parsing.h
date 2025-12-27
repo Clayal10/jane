@@ -168,12 +168,11 @@ typedef struct http_respones_frame{
     http_response_header_frame header;
 }http_response_frame;
 
-// Parses 'buf' for an http request. If there is not enough data for a header, NULL will be returned. 
-// If a header frame can be parsed, the corrsponding information will be removed from 'buf' to be 
-// returned and used for future processing to prevent message loss. A whole request frame is given, but
-// it is likely that only the header is used if there is no body in the request.
-char* decode_http(char* buf, http_request_frame *frame);
+// Parses 'buf' for an http request. If there is not enough data for a header, -1 will be returned. 
+// If a header frame can be parsed, the offset of the end of that request is returned.
+int decode_http(char* buf, http_request_frame *frame);
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len);
+void decode_get_request(http_request_header_frame *header, char* buffer, size_t len);
 // Frees the strings inside of the object.
 void free_http_header(http_request_header_frame *header);
 // Prepares response for a buffer of bytes to send over http back to the client.

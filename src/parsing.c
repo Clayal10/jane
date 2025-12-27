@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "parsing.h"
 
-char* decode_http(char* buffer, http_request_frame *frame){
+int decode_http(char* buffer, http_request_frame *frame){
     if(!frame){
         perror("HTTP request frame cannot be null");
         return 0;
@@ -14,25 +14,21 @@ char* decode_http(char* buffer, http_request_frame *frame){
     for(i=0; i<buffer_len-3; i++){
         if(buffer[i] == ASCII_CR && buffer[i+1] == ASCII_LF && buffer[i+2] == ASCII_CR && buffer[i+3] == ASCII_LF){
             decode_http_header(frame->header, buffer, i);
-            break;
+            return i;
         }
     }
     // TODO parse payload
+    return -1;
 }
 
 // We know that 'buffer' contains all necessary bytes for the header if called from decode_http
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len){
     /* First ASCII line */
     int method_end = 0;
-    for(int i=0; i<len-1; i++){
-        if(buffer[i] == ASCII_CR && buffer[i+1] == ASCII_LF){
-            method_end = i;
+    for(;method_end<len-1; method_end++){
+        if(buffer[method_end] == ASCII_CR && buffer[method_end+1] == ASCII_LF){
             break;
         }
-    }
-    if(!method_end){
-        perror("No valid ascii lines found in the HTTP buffer");
-        return;
     }
 
     char method[method_end+1];
@@ -55,8 +51,8 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     header->endpoint = malloc(endpoint_end-offset+1);
     memcpy(header->endpoint, &method[offset], endpoint_end-offset);
     header->endpoint[endpoint_end-offset] = 0;
-    /* Need to parse host, content-length and content-type at least*/
 
+    /* Need to parse host, content-length and content-type at least*/
     // Skip 'HTTP/1.1 to get to 'Host'
     offset = endpoint_end;
     for(;offset < len-2;offset++){
@@ -77,14 +73,14 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     header->host[host_end-offset] = 0;
 
     // Need to get to 'Content-type'
-    offset += 2; // skip crlf
-    const char* content_type = "Content-Type: ";
-    int content_type_len = strlen(content_type);
-    for(;offset<len-content_type_len;offset++){
-        if(memcmp(&buffer[offset], content_type, content_type_len) == 0){
-            break;
-        }
-    }
+    // offset += 2; // skip crlf
+    // const char* content_type = "Content-Type: ";
+    // int content_type_len = strlen(content_type);
+    // for(;offset<len-content_type_len;offset++){
+    //     if(memcmp(&buffer[offset], content_type, content_type_len) == 0){
+    //         break;
+    //     }
+    // }
     // Used for POST
     //offset += content_type_len; // skip 'Content-Type: '
     //int content_type_end = offset;
@@ -96,6 +92,10 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     //header->content_type = malloc(content_type_end-offset+1);
     //memcpy(header->content_type, &buffer[offset], content_type_end-offset);
     //header->content_type[content_type_end-offset] = 0;
+}
+
+void decode_get_request(http_request_header_frame *header, char* buffer, size_t len){
+    
 }
 
 void free_http_header(http_request_header_frame *header){

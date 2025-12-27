@@ -101,18 +101,17 @@ void *http_handle_client(void *c){
         }
         http_request_frame frame;
         decode_http(buffer, &frame);
-        // TODO do a lot more checking here, read more if needed.
-        endpoint_node* ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
-        ep->func(0, 0);
-        free_http_header(frame.header);
+        
         // 1. Parse HTTP request
         // 2. Get the function corresponding to the endpoint.
         // 3. Create an http_request with the proper header and body previously parsed.
         // 4. Give the function an instance of an http_response_writer that can write back to
         //    this client_fd.
         // Example:
-        // endpoint_node* ep = http_endpoint_get(&server->head, endpoint_string);
-        // ep->func(tcp_socket_wrapper, parsed_http_request);
+        // endpoint_node* ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
+        // ep->func(0, 0);
+        // free_http_header(frame.header);
+
     }
     free(buffer);
 }
