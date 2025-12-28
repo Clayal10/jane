@@ -185,8 +185,9 @@ typedef struct http_respones_frame{
     http_response_header_frame header;
 }http_response_frame;
 
-// Parses 'buf' for an http request. If there is not enough data for a header, -1 will be returned. 
-// If a header frame can be parsed, the offset of the end of that request is returned.
+// Parses 'buf' for an http request. If there is not enough data for a header, -1 will be returned. In this case,
+// the original buffer should be given back to the function with additional data. If a header frame can be parsed, 
+// the offset of the end of that request is returned.
 int decode_http(char* buf, http_request_frame *frame);
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len);
 void decode_post_request(http_request_header_frame *header, char* buffer, size_t len, int offset);

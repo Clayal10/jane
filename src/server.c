@@ -23,7 +23,7 @@ http_server* http_new_server(uint16_t port){
     http_server *server = (http_server*)malloc(sizeof(http_server));
     pthread_mutex_init(&server->mu, NULL);
     server->port = port;
-    server->head = NULL; // Do I need to do this?
+    server->head = NULL;
     return server;
 }
 

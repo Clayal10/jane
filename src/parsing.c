@@ -13,8 +13,15 @@ int decode_http(char* buffer, http_request_frame *frame){
         perror("HTTP request frame cannot be null");
         return 0;
     }
+    
     size_t buffer_len = strlen(buffer);
     frame->header = malloc(sizeof(http_request_header_frame));
+    frame->header->content_length = 0;
+    frame->header->content_type = NULL;
+    frame->header->content_length = 0;
+    frame->header->endpoint = NULL;
+    frame->header->host = NULL;
+    
     int i;
     for(i=0; i<buffer_len-3; i++){
         if(buffer[i] == ASCII_CR && buffer[i+1] == ASCII_LF && buffer[i+2] == ASCII_CR && buffer[i+3] == ASCII_LF){
@@ -30,19 +37,17 @@ int decode_http(char* buffer, http_request_frame *frame){
 success:
 
     int offset = i;
-    // All methods that don't have content_length.
-    switch(frame->header->method){
-    case GET:
+    if(!frame->header->content_length){
         return offset;
-    default:
-        break;
     }
 
     if(buffer_len < offset+frame->header->content_length){
+        // need more data for the rest of the body
         return -1;
     }
     
-    int end = offset;
+    frame->body = malloc(frame->header->content_length);
+    
 
 }
 
@@ -152,12 +157,16 @@ void free_http_header(http_request_header_frame *header){
     }
     if(header->endpoint){
         free(header->endpoint);
+        header->endpoint = NULL;
     }
     if(header->host){
         free(header->host);
+        header->host = NULL;
     }
     if(header->content_type){
         free(header->content_type);
+        header->content_type = NULL;
     }
     free(header);
+    header = NULL;
 }
