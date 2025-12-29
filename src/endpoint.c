@@ -32,7 +32,7 @@ endpoint_node* http_endpoint_get (endpoint_node** head, char* ep){
     return 0;
 }
 
-void http_free_all_endpoints(endpoint_node **head){
+void http_free_all_endpoints(endpoint_node** head){
     if(!*head){
         return;
     }

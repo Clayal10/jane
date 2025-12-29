@@ -8,19 +8,19 @@ const char* field_content_type = "Content-Type: ";
 const char* field_content_length = "Content-Length: ";
 const char* field_accept = "Accept: ";
 
-int decode_http(char* buffer, http_request_frame *frame){
-    if(!frame){
+int decode_http(char* buffer, http_request_frame *frame, size_t buffer_len){
+    if(!frame || !buffer){
         perror("HTTP request frame cannot be null");
         return 0;
     }
     
-    size_t buffer_len = strlen(buffer);
     frame->header = malloc(sizeof(http_request_header_frame));
-    frame->header->content_length = 0;
+    frame->header->method = INVALID;
     frame->header->content_type = NULL;
     frame->header->content_length = 0;
     frame->header->endpoint = NULL;
     frame->header->host = NULL;
+    frame->body = NULL;
     
     int i;
     for(i=0; i<buffer_len-3; i++){
@@ -46,9 +46,9 @@ success:
         return -1;
     }
     
-    frame->body = malloc(frame->header->content_length);
-    
-
+    frame->body = malloc(frame->header->content_length+1);
+    memcpy(frame->body, &buffer[offset], frame->header->content_length);
+    frame->body[frame->header->content_length] = 0;
 }
 
 // We know that 'buffer' contains all necessary bytes for the header if called from decode_http
@@ -151,22 +151,28 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
     }
 }
 
-void free_http_header(http_request_header_frame *header){
-    if(!header){
+void free_http_fields(http_request_frame* frame){
+    if(!frame){
         return;
     }
-    if(header->endpoint){
-        free(header->endpoint);
-        header->endpoint = NULL;
+    if(frame->header->endpoint){
+        free(frame->header->endpoint);
+        frame->header->endpoint = NULL;
     }
-    if(header->host){
-        free(header->host);
-        header->host = NULL;
+    if(frame->header->host){
+        free(frame->header->host);
+        frame->header->host = NULL;
     }
-    if(header->content_type){
-        free(header->content_type);
-        header->content_type = NULL;
+    if(frame->header->content_type){
+        free(frame->header->content_type);
+        frame->header->content_type = NULL;
     }
-    free(header);
-    header = NULL;
+    if(frame->header){
+        free(frame->header);
+        frame->header = NULL;
+    }
+    if(frame->body){
+        free(frame->body);
+        frame->body = NULL;
+    }
 }

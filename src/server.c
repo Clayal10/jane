@@ -74,7 +74,7 @@ int http_listen_and_serve(http_server *server){
         // If we receive an HTTP request:
         //  - Check if the endpoint is registered in the server.
         //  - Run the function associated with the endpoint; pass the client_fd into the function.
-        struct http_client client;
+        http_client client;
         client.server = server;
         client.fd = client_fd;
 
@@ -88,7 +88,7 @@ void *http_handle_client(void *c){
     if(!client->server){
         return 0;
     }
-    size_t buffer_len = 2048;
+    size_t buffer_len = 1024*64; // 64 kb should be enough.
     char *buffer = malloc(buffer_len);
     for(;;){
         size_t count = read(client->fd, buffer, buffer_len);
@@ -100,7 +100,8 @@ void *http_handle_client(void *c){
             break;
         }
         http_request_frame frame;
-        decode_http(buffer, &frame);
+        // May need to do multiple calls. Can subtract (non -1) status from count until we get -1
+        int status = decode_http(buffer, &frame, count);
         
         // 1. Parse HTTP request
         // 2. Get the function corresponding to the endpoint.
@@ -110,9 +111,9 @@ void *http_handle_client(void *c){
         // Example:
         // endpoint_node* ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
         // ep->func(0, 0);
-        // free_http_header(frame.header);
-
+        free_http_fields(&frame);
     }
+    close(client->fd);
     free(buffer);
 }
 

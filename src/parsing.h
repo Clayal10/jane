@@ -152,6 +152,7 @@ extern const char* field_content_length;
 extern const char* field_accept;
 
 typedef enum{
+    INVALID, // for the 0 value.
     CONNECT,
     DELETE,
     GET, // Supported
@@ -164,7 +165,7 @@ typedef enum{
 } Method;
 
 // Fields only include the fields required by the server to complete a response.
-typedef struct http_request_header_frame{
+typedef struct {
     Method method;
     char* endpoint;
     char* host;
@@ -172,27 +173,26 @@ typedef struct http_request_header_frame{
     int content_length;
 }http_request_header_frame;
 
-typedef struct http_request_frame{
+typedef struct {
     http_request_header_frame* header;
     char* body;
 }http_request_frame;
 
-typedef struct http_response_header_frame{
-
+typedef struct {
 } http_response_header_frame;
 
-typedef struct http_respones_frame{
+typedef struct {
     http_response_header_frame header;
 }http_response_frame;
 
 // Parses 'buf' for an http request. If there is not enough data for a header, -1 will be returned. In this case,
 // the original buffer should be given back to the function with additional data. If a header frame can be parsed, 
 // the offset of the end of that request is returned.
-int decode_http(char* buf, http_request_frame *frame);
+int decode_http(char* buf, http_request_frame *frame, size_t count);
 void decode_http_header(http_request_header_frame *header, char* buffer, size_t len);
 void decode_post_request(http_request_header_frame *header, char* buffer, size_t len, int offset);
 // Frees the strings inside of the object.
-void free_http_header(http_request_header_frame *header);
+void free_http_fields(http_request_frame *header);
 // Prepares response for a buffer of bytes to send over http back to the client.
 char* encode_http(http_response_frame response);
 

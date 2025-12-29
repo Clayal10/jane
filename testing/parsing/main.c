@@ -1,6 +1,7 @@
 #include<stdio.h>
-#include "../src/parsing.h"
-#include "../src/endpoint.h"
+#include<string.h>
+#include "../../src/parsing.h"
+#include "../../src/endpoint.h"
 
 void example_handle_func(http_response_writer* w, http_request* req){
     printf("Hit endpoint!!\n");
@@ -10,7 +11,7 @@ void example_handle_func_two(http_response_writer* w, http_request* req){
     printf("Hit endpoint 2!!\n");
 }
 
-void unit_test_endpoints(){
+int unit_test_endpoints(){
     http_server* server = http_new_server(34567);
     http_handle_func(server, "/", &example_handle_func);
     http_handle_func(server, "/config/setup", &example_handle_func_two);
@@ -48,18 +49,24 @@ char* string_post_request = "POST /lurk-client/setup/ HTTP/1.1\r\n"
 "\r\n"
 "{\"Hostname\":\"\",\"Port\":\"5069\"}";
 
-void unit_test_parsing(){
+int unit_test_parsing(){
     http_request_frame frame;
-    decode_http(string_request, &frame);
+    decode_http(string_request, &frame, strlen(string_request));
     printf("Method: %d\nEndpoint: %s\nHost: %s\n", 
         frame.header->method, frame.header->endpoint, frame.header->host);
-    free_http_header(frame.header);
-    decode_http(string_post_request, &frame);
-    printf("Method: %d\nEndpoint: %s\nHost: %s\nContent-Length: %d\nContent-Type: %s\n", 
-        frame.header->method, frame.header->endpoint, frame.header->host, frame.header->content_length, frame.header->content_type);
+    free_http_fields(&frame);
+    decode_http(string_post_request, &frame, strlen(string_post_request));
+    printf("Method: %d\nEndpoint: %s\nHost: %s\nContent-Length: %d\nContent-Type: %s\nBody: %s\n", 
+        frame.header->method, frame.header->endpoint, frame.header->host, frame.header->content_length, frame.header->content_type, frame.body);
+    if(strlen(frame.body) == 0){
+        return -1;
+    }
+    return 0;
 }
 
 int main(){
-    unit_test_parsing();
+    if(unit_test_parsing()){
+        return -1;
+    }
     return 0;
 }

@@ -4,9 +4,7 @@
 /*
 This header file contains objects and functions that are in the public API
 for this library.
-*/
 
-/*
 Priority for an HTTP server:
     1. Serving HTML pages
     2. Serving static directory for css/js
@@ -18,8 +16,8 @@ Priority for an HTTP server:
 
 typedef struct http_server http_server;
 // http_request contains information regarding the request sent by the client.
-typedef struct http_request{} http_request;
-typedef struct http_response_writer{
+typedef struct {} http_request;
+typedef struct {
     int client_fd;
     // Other function pointers.
     void (*write)(void*);
