@@ -29,7 +29,7 @@ endpoint_node* http_endpoint_get (endpoint_node** head, char* ep){
         }
         current = current->next;
     }
-    return 0;
+    return NULL;
 }
 
 void http_free_all_endpoints(endpoint_node** head){

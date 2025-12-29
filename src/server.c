@@ -22,7 +22,7 @@ struct http_server{
 http_server* http_new_server(uint16_t port){
     http_server *server = (http_server*)malloc(sizeof(http_server));
     pthread_mutex_init(&server->mu, NULL);
-    server->port = port;
+    server->port = htons(port);
     server->head = NULL;
     return server;
 }
@@ -63,13 +63,16 @@ int http_listen_and_serve(http_server *server){
         printf("Error: %s\n", strerror(errno));
         return -1;
     }
-
     // As we accept connections, each connection will run in a thread and process HTTP requests
     // for that client. Each thread will keep track of their client_fd.
     for(;;){
         struct sockaddr_in client_address;
 		socklen_t address_size = sizeof(struct sockaddr_in);
 		int client_fd = accept(skt, (struct sockaddr *)(&client_address), &address_size);
+        if(client_fd == -1){
+            printf("Error: %s\n", strerror(errno));
+            continue;
+        }
         // Read from each client that comes in, wait for HTTP request.
         // If we receive an HTTP request:
         //  - Check if the endpoint is registered in the server.
@@ -90,19 +93,55 @@ void *http_handle_client(void *c){
     }
     size_t buffer_len = 1024*64; // 64 kb should be enough.
     char *buffer = malloc(buffer_len);
+    int read_offset = 0;
     for(;;){
-        size_t count = read(client->fd, buffer, buffer_len);
+        size_t count = read(client->fd, &buffer[read_offset], buffer_len);
         if(!count){
             break;
         }
         if(count == -1){
-            printf("Error: %s\n", strerror(errno));
             break;
         }
-        http_request_frame frame;
-        // May need to do multiple calls. Can subtract (non -1) status from count until we get -1
-        int status = decode_http(buffer, &frame, count);
         
+        int bytes_processed = 0;
+        for(;;){
+            http_request_frame frame;
+            // status is either -1 to indicate the need for more data or the offset of the 
+            // buffer the message ended at.
+            int status = decode_http(&buffer[bytes_processed], &frame, (count+read_offset)-bytes_processed);
+            if(status == -1){
+                // If we need more data, add to the buffer and reprocess the whole thing.
+                // This applies if the payload is sent in a separate message from the header.
+                read_offset = count;
+                goto error;
+            }
+            bytes_processed += status;
+            // we read and parsed a valid message, now we need to continue processing other messages
+            // in the buffer or read again to get a new message.
+            read_offset = 0;
+
+            endpoint_node *ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
+            if(!ep){
+                char* err_message = malloc(512);
+                sprintf(err_message, "Endpoint %s not registered.\n", frame.header->endpoint);
+                perror(err_message);
+                free(err_message);
+                goto error;
+            }
+
+            printf("Calling function\n");
+            ep->func(0, 0);
+
+            free_http_fields(&frame);
+            if(bytes_processed = count){
+                break;
+            }
+            continue;
+
+        error:
+            free_http_fields(&frame);
+            break;
+        }
         // 1. Parse HTTP request
         // 2. Get the function corresponding to the endpoint.
         // 3. Create an http_request with the proper header and body previously parsed.
@@ -111,7 +150,6 @@ void *http_handle_client(void *c){
         // Example:
         // endpoint_node* ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
         // ep->func(0, 0);
-        free_http_fields(&frame);
     }
     close(client->fd);
     free(buffer);

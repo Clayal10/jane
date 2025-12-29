@@ -9,11 +9,7 @@ const char* field_content_length = "Content-Length: ";
 const char* field_accept = "Accept: ";
 
 int decode_http(char* buffer, http_request_frame *frame, size_t buffer_len){
-    if(!frame || !buffer){
-        perror("HTTP request frame cannot be null");
-        return 0;
-    }
-    
+    // buffer_len indicates the number of bytes that were read into the buffer.
     frame->header = malloc(sizeof(http_request_header_frame));
     frame->header->method = INVALID;
     frame->header->content_type = NULL;
@@ -49,6 +45,7 @@ success:
     frame->body = malloc(frame->header->content_length+1);
     memcpy(frame->body, &buffer[offset], frame->header->content_length);
     frame->body[frame->header->content_length] = 0;
+    return offset + frame->header->content_length;
 }
 
 // We know that 'buffer' contains all necessary bytes for the header if called from decode_http
