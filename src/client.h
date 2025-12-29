@@ -2,6 +2,7 @@
 #define CLIENT_H
 
 #include <stdio.h>
+#include "../include/http.h"
 
 typedef struct {
     http_server *server;

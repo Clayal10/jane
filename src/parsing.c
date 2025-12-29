@@ -8,7 +8,7 @@ const char* field_content_type = "Content-Type: ";
 const char* field_content_length = "Content-Length: ";
 const char* field_accept = "Accept: ";
 
-int decode_http(char* buffer, http_request_frame *frame, size_t buffer_len){
+int decode_http_request(char* buffer, http_request_frame *frame, size_t buffer_len){
     // buffer_len indicates the number of bytes that were read into the buffer.
     frame->header = malloc(sizeof(http_request_header_frame));
     frame->header->method = INVALID;
@@ -173,3 +173,6 @@ void free_http_fields(http_request_frame* frame){
         frame->body = NULL;
     }
 }
+
+char* encode_http_response(http_response_frame *frame);
+

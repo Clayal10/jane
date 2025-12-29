@@ -20,9 +20,7 @@ typedef struct {
 } http_request;
 
 typedef struct {
-    int client_fd;
-    void (*write)(void*);
-    void (*write_header)(void*);
+    int fd;
 } http_response_writer;
 
 // The new HTTP server is allocated on the heap and must be freed by calling http_free_server(server);
@@ -38,5 +36,10 @@ int http_listen_and_serve(http_server *server);
 // contain an http writer that you need for writing and reading via HTTP as well as the request
 // given by the client.
 void http_handle_func(http_server *server, char* endpoint, void(*func)(http_response_writer*, http_request*));
+// http_write will write data in buffer to the socket via HTTP. 'buffer' should be the desired payload. A status
+// code of 200 will be written when this function is successfully called.
+void http_write(http_response_writer* w, char* buffer);
+// http_writer_header will write an http status code via HTTP.
+void http_write_header(http_response_writer* w, int status_code);
 
 #endif

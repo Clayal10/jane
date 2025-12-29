@@ -6,8 +6,11 @@ install:
 	cp libjane.so /usr/lib/
 	if [ ! -d "/usr/include/jane/" ]; then \
         mkdir /usr/include/jane/ ; fi
-	cp include/http.h /usr/include/jane/
+	cp include/* /usr/include/jane/
 
 clean:
 	rm *.o
 	rm *.so
+
+remove:
+	rm /usr/include/jane/*

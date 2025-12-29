@@ -51,11 +51,11 @@ char* string_post_request = "POST /lurk-client/setup/ HTTP/1.1\r\n"
 
 int unit_test_parsing(){
     http_request_frame frame;
-    decode_http(string_request, &frame, strlen(string_request));
+    decode_http_request(string_request, &frame, strlen(string_request));
     printf("Method: %d\nEndpoint: %s\nHost: %s\n", 
         frame.header->method, frame.header->endpoint, frame.header->host);
     free_http_fields(&frame);
-    decode_http(string_post_request, &frame, strlen(string_post_request));
+    decode_http_request(string_post_request, &frame, strlen(string_post_request));
     printf("Method: %d\nEndpoint: %s\nHost: %s\nContent-Length: %d\nContent-Type: %s\nBody: %s\n", 
         frame.header->method, frame.header->endpoint, frame.header->host, frame.header->content_length, frame.header->content_type, frame.body);
     if(strlen(frame.body) == 0){

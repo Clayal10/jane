@@ -14,16 +14,18 @@
 #include "parsing.h"
 
 struct http_server{
-    uint16_t port;
     endpoint_node *head;
+    uint16_t port;
     pthread_mutex_t mu;
 };
 
-void populate_http_request(http_request* req, http_request_frame frame);
-void free_http_request(http_request* req);
+static void populate_http_request(http_request* req, http_request_frame frame);
+static void free_http_request(http_request* req);
+static void new_response_writer(http_response_writer* w);
+static void free_response_writer(http_response_writer* w);
 
 http_server* http_new_server(uint16_t port){
-    http_server *server = (http_server*)malloc(sizeof(http_server));
+    http_server *server = malloc(sizeof(http_server));
     pthread_mutex_init(&server->mu, NULL);
     server->port = htons(port);
     server->head = NULL;
@@ -36,6 +38,7 @@ void http_free_server(http_server *server){
         return;
     }
     http_free_all_endpoints(&server->head);
+    server->head = NULL;
     pthread_mutex_destroy(&server->mu);
     free(server);
 }
@@ -72,14 +75,10 @@ int http_listen_and_serve(http_server *server){
         struct sockaddr_in client_address;
 		socklen_t address_size = sizeof(struct sockaddr_in);
 		int client_fd = accept(skt, (struct sockaddr *)(&client_address), &address_size);
-        if(client_fd == -1){
+        if(client_fd < 0){
             printf("Error: %s\n", strerror(errno));
             continue;
         }
-        // Read from each client that comes in, wait for HTTP request.
-        // If we receive an HTTP request:
-        //  - Check if the endpoint is registered in the server.
-        //  - Run the function associated with the endpoint; pass the client_fd into the function.
         http_client client;
         client.server = server;
         client.fd = client_fd;
@@ -96,6 +95,8 @@ void *http_handle_client(void *c){
     }
 
     // Create http_response_writer with the socket.
+    http_response_writer writer;
+    writer.fd = client->fd;
 
     size_t buffer_len = 1024*64; // 64 kb should be enough.
     char *buffer = malloc(buffer_len);
@@ -114,7 +115,7 @@ void *http_handle_client(void *c){
             http_request_frame frame;
             // status is either -1 to indicate the need for more data or the offset of the 
             // buffer the message ended at.
-            int status = decode_http(&buffer[bytes_processed], &frame, (count+read_offset)-bytes_processed);
+            int status = decode_http_request(&buffer[bytes_processed], &frame, (count+read_offset)-bytes_processed);
             if(status == -1){
                 // If we need more data, add to the buffer and reprocess the whole thing.
                 // This applies if the payload is sent in a separate message from the header.
@@ -140,7 +141,7 @@ void *http_handle_client(void *c){
 
             http_request req;
             populate_http_request(&req, frame);
-            ep->func(0, &req);
+            ep->func(&writer, &req);
 
             free_http_request(&req);
             free_http_fields(&frame);
@@ -162,7 +163,17 @@ void http_handle_func(http_server *server, char* endpoint, void(*func)(http_resp
     http_endpoint_push(&server->head, endpoint, func);    
 }
 
-void populate_http_request(http_request* req, http_request_frame frame){
+// All objects and buffers will be allocated and freed within these functions.
+void http_write(http_response_writer* w, char* buffer){
+    // 1. Create http_response_frame and populate it with the relevant information.
+    // 2. Write it to the socket.
+}
+
+void http_write_header(http_response_writer* w, int status_code){
+    // Essentially the same as http_write
+}
+
+static void populate_http_request(http_request* req, http_request_frame frame){
     req->method = NULL;
     req->body = NULL;
     
@@ -212,7 +223,7 @@ void populate_http_request(http_request* req, http_request_frame frame){
     }
 }
 
-void free_http_request(http_request* req){
+static void free_http_request(http_request* req){
     if(req->body){
         free(req->body);
         req->body = NULL;
@@ -221,4 +232,8 @@ void free_http_request(http_request* req){
         free(req->method);
         req->method = NULL;
     }
+}
+
+static void new_response_writer(http_response_writer* w){
+    
 }
