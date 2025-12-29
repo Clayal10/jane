@@ -155,7 +155,7 @@ typedef enum{
     INVALID, // for the 0 value.
     CONNECT,
     DELETE,
-    GET, // Supported
+    GET,
     HEAD,
     OPTIONS,
     PATCH,

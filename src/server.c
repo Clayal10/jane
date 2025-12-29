@@ -19,6 +19,9 @@ struct http_server{
     pthread_mutex_t mu;
 };
 
+void populate_http_request(http_request* req, http_request_frame frame);
+void free_http_request(http_request* req);
+
 http_server* http_new_server(uint16_t port){
     http_server *server = (http_server*)malloc(sizeof(http_server));
     pthread_mutex_init(&server->mu, NULL);
@@ -91,6 +94,9 @@ void *http_handle_client(void *c){
     if(!client->server){
         return 0;
     }
+
+    // Create http_response_writer with the socket.
+
     size_t buffer_len = 1024*64; // 64 kb should be enough.
     char *buffer = malloc(buffer_len);
     int read_offset = 0;
@@ -120,7 +126,10 @@ void *http_handle_client(void *c){
             // in the buffer or read again to get a new message.
             read_offset = 0;
 
+            // Each different client points to the same server.
+            pthread_mutex_lock(&client->server->mu);
             endpoint_node *ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
+            pthread_mutex_unlock(&client->server->mu);
             if(!ep){
                 char* err_message = malloc(512);
                 sprintf(err_message, "Endpoint %s not registered.\n", frame.header->endpoint);
@@ -129,9 +138,11 @@ void *http_handle_client(void *c){
                 goto error;
             }
 
-            printf("Calling function\n");
-            ep->func(0, 0);
+            http_request req;
+            populate_http_request(&req, frame);
+            ep->func(0, &req);
 
+            free_http_request(&req);
             free_http_fields(&frame);
             if(bytes_processed = count){
                 break;
@@ -142,14 +153,6 @@ void *http_handle_client(void *c){
             free_http_fields(&frame);
             break;
         }
-        // 1. Parse HTTP request
-        // 2. Get the function corresponding to the endpoint.
-        // 3. Create an http_request with the proper header and body previously parsed.
-        // 4. Give the function an instance of an http_response_writer that can write back to
-        //    this client_fd.
-        // Example:
-        // endpoint_node* ep = http_endpoint_get(&client->server->head, frame.header->endpoint);
-        // ep->func(0, 0);
     }
     close(client->fd);
     free(buffer);
@@ -157,4 +160,65 @@ void *http_handle_client(void *c){
 
 void http_handle_func(http_server *server, char* endpoint, void(*func)(http_response_writer*, http_request*)){
     http_endpoint_push(&server->head, endpoint, func);    
+}
+
+void populate_http_request(http_request* req, http_request_frame frame){
+    req->method = NULL;
+    req->body = NULL;
+    
+    char method[10];
+    memset(method, 0, 10); // to always ensure a null terminator.
+    switch(frame.header->method){
+    case CONNECT:
+        strcpy(method, "CONNECT");
+        break;        
+    case DELETE:
+        strcpy(method, "DELETE");
+        break;
+    case GET:
+        strcpy(method, "GET");
+        break;
+    case HEAD:
+        strcpy(method, "HEAD");
+        break;
+    case OPTIONS:
+        strcpy(method, "OPTIONS");
+        break;
+    case PATCH:
+        strcpy(method, "PATCH");
+        break;
+    case POST:
+        strcpy(method, "POST");
+        break;
+    case PUT:
+        strcpy(method, "PUT");
+        break;
+    case TRACE:
+        strcpy(method, "TRACE");
+        break;
+    default:
+        return;
+    }
+    size_t len = strlen(method);
+    req->method = malloc(len+1);
+    memcpy(req->method, method, len);
+    req->method[len] = 0;
+
+    if(frame.body){
+        len = strlen(frame.body);
+        req->body = malloc(len+1);
+        memcpy(req->body, frame.body, len);
+        req->body[len] = 0;
+    }
+}
+
+void free_http_request(http_request* req){
+    if(req->body){
+        free(req->body);
+        req->body = NULL;
+    }
+    if(req->method){
+        free(req->method);
+        req->method = NULL;
+    }
 }

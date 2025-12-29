@@ -4,28 +4,30 @@
 /*
 This header file contains objects and functions that are in the public API
 for this library.
-
-Priority for an HTTP server:
-    1. Serving HTML pages
-    2. Serving static directory for css/js
-    3. Registering endpoints
-    4. Serving TLS
 */
 
 #include <stdint.h>
 
 typedef struct http_server http_server;
+
 // http_request contains information regarding the request sent by the client.
-typedef struct {} http_request;
+// TODO: Look into what else should go here.
+typedef struct {
+    // String method name. EX: "GET", "POST", etc.
+    char* method;
+    // Raw string of the body content. Is likely JSON, can create a JSON parser.
+    char* body;
+} http_request;
+
 typedef struct {
     int client_fd;
-    // Other function pointers.
     void (*write)(void*);
     void (*write_header)(void*);
 } http_response_writer;
 
 // The new HTTP server is allocated on the heap and must be freed by calling http_free_server(server);
-// 
+// 'port' will be converted to big endian.
+// TODO: add support for architectures that aren't little endian.
 http_server *http_new_server(uint16_t port);
 // Freeing the HTTP server also frees all of the endpoints created with http_handle_func.
 void http_free_server(http_server *server);
