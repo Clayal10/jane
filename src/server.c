@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+#include <locale.h>
 #include "../include/http.h"
 #include "client.h"
 #include "endpoint.h"
@@ -169,8 +171,28 @@ void http_write(http_response_writer* w, char* buffer){
     // 2. Write it to the socket.
 }
 
-void http_write_header(http_response_writer* w, int status_code){
+void http_write_header(http_response_writer* w, http_status_code status_code){
     // Essentially the same as http_write
+    http_response_frame *resp = malloc(sizeof(http_response_frame));
+    http_response_header_frame *header = malloc(sizeof(http_response_header_frame));
+    header->status_code = status_code;
+    header->content_length = 0;
+    header->content_type = NULL;
+    char buffer[128];
+    time_t t;
+    time(&t);
+    struct tm *gm_time = gmtime(&t);
+    setlocale(LC_ALL, "C");
+    size_t n = strftime(buffer, sizeof(buffer), "%a, %d %m %Y %H:%M:%S GMT", gm_time);
+    header->date = malloc(n+1);
+    memcpy(header->date, buffer, n);
+    header->date[n] = 0;
+    resp->header = header;
+    char* data = encode_http_response(resp);
+    // Write the data
+    free(resp->header->date);
+    free(resp->header);
+    free(resp);
 }
 
 static void populate_http_request(http_request* req, http_request_frame frame){
@@ -180,31 +202,31 @@ static void populate_http_request(http_request* req, http_request_frame frame){
     char method[10];
     memset(method, 0, 10); // to always ensure a null terminator.
     switch(frame.header->method){
-    case CONNECT:
+    case METHOD_CONNECT:
         strcpy(method, "CONNECT");
         break;        
-    case DELETE:
+    case METHOD_DELETE:
         strcpy(method, "DELETE");
         break;
-    case GET:
+    case METHOD_GET:
         strcpy(method, "GET");
         break;
-    case HEAD:
+    case METHOD_HEAD:
         strcpy(method, "HEAD");
         break;
-    case OPTIONS:
+    case METHOD_OPTIONS:
         strcpy(method, "OPTIONS");
         break;
-    case PATCH:
+    case METHOD_PATCH:
         strcpy(method, "PATCH");
         break;
-    case POST:
+    case METHOD_POST:
         strcpy(method, "POST");
         break;
-    case PUT:
+    case METHOD_PUT:
         strcpy(method, "PUT");
         break;
-    case TRACE:
+    case METHOD_TRACE:
         strcpy(method, "TRACE");
         break;
     default:

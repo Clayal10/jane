@@ -11,7 +11,7 @@ const char* field_accept = "Accept: ";
 int decode_http_request(char* buffer, http_request_frame *frame, size_t buffer_len){
     // buffer_len indicates the number of bytes that were read into the buffer.
     frame->header = malloc(sizeof(http_request_header_frame));
-    frame->header->method = INVALID;
+    frame->header->method = METHOD_INVALID;
     frame->header->content_type = NULL;
     frame->header->content_length = 0;
     frame->header->endpoint = NULL;
@@ -80,31 +80,31 @@ void decode_http_header(http_request_header_frame *header, char* buffer, size_t 
 
     switch(method[0]){
     case ASCII_C:
-        header->method = CONNECT;
+        header->method = METHOD_CONNECT;
         break;
     case ASCII_D:
-        header->method = DELETE;
+        header->method = METHOD_DELETE;
         break;
     case ASCII_G:
-        header->method = GET;
+        header->method = METHOD_GET;
         break;
     case ASCII_H:
-        header->method = HEAD;
+        header->method = METHOD_HEAD;
         break;
     case ASCII_O:
-        header->method = OPTIONS;
+        header->method = METHOD_OPTIONS;
         break;
     case ASCII_P:
         if(method[1] == ASCII_O){
-            header->method = POST;
+            header->method = METHOD_POST;
         }else if(method[1] == ASCII_A){
-            header->method = PATCH;
+            header->method = METHOD_PATCH;
         }else{
-            header->method = PUT;
+            header->method = METHOD_PUT;
         }
         break;
     case ASCII_T:
-        header->method = TRACE;
+        header->method = METHOD_TRACE;
         break;
     }
 
@@ -174,5 +174,6 @@ void free_http_fields(http_request_frame* frame){
     }
 }
 
-char* encode_http_response(http_response_frame *frame);
-
+char* encode_http_response(http_response_frame *frame){
+    
+}

@@ -2,6 +2,7 @@
 #define PARSING_H
 
 #include <stddef.h>
+#include "../include/http.h"
 
 #define ASCII_NUL 0x00  /* Null */
 #define ASCII_SOH 0x01  /* Start of Heading */
@@ -151,32 +152,9 @@ extern const char* field_content_type;
 extern const char* field_content_length;
 extern const char* field_accept;
 
-typedef enum{
-    INVALID, // for the 0 value.
-    CONNECT,
-    DELETE,
-    GET,
-    HEAD,
-    OPTIONS,
-    PATCH,
-    POST,
-    PUT,
-    TRACE,
-} Method;
-
-typedef enum{
-    OK = 200,
-    NO_CONTENT = 204,
-    BAD_REQUEST = 400,
-    FORBIDDEN = 403,
-    NOT_FOUND = 404,
-    INTERNAL_SERVER_ERROR = 500,
-    NOT_IMPLEMENTED = 501,
-} Status_code;
-
 // Fields only include the fields required by the server to complete a response.
 typedef struct {
-    Method method;
+    http_method method;
     char* endpoint;
     char* host;
     char* content_type;
@@ -189,7 +167,7 @@ typedef struct {
 }http_request_frame;
 
 typedef struct {
-    Status_code status_code;
+    http_status_code status_code;
     char* date;
     int content_length;
     char* content_type; // only exists if content_length != 0

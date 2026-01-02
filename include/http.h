@@ -23,6 +23,29 @@ typedef struct {
     int fd;
 } http_response_writer;
 
+typedef enum{
+    METHOD_INVALID, // for the 0 value.
+    METHOD_CONNECT,
+    METHOD_DELETE,
+    METHOD_GET,
+    METHOD_HEAD,
+    METHOD_OPTIONS,
+    METHOD_PATCH,
+    METHOD_POST,
+    METHOD_PUT,
+    METHOD_TRACE,
+} http_method;
+
+typedef enum{
+    STATUS_OK = 200,
+    STATUS_NO_CONTENT = 204,
+    STATUS_BAD_REQUEST = 400,
+    STATUS_FORBIDDEN = 403,
+    STATUS_NOT_FOUND = 404,
+    STATUS_INTERNAL_SERVER_ERROR = 500,
+    STATUS_NOT_IMPLEMENTED = 501,
+} http_status_code;
+
 // The new HTTP server is allocated on the heap and must be freed by calling http_free_server(server);
 // 'port' will be converted to big endian.
 // TODO: add support for architectures that aren't little endian.
