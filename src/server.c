@@ -190,6 +190,7 @@ void http_write_header(http_response_writer* w, http_status_code status_code){
     resp->header = header;
     char* data = encode_http_response(resp);
     // Write the data
+    write(w->fd, data, strlen(data));
     free(resp->header->date);
     free(resp->header);
     free(resp);

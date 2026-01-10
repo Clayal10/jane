@@ -152,6 +152,15 @@ extern const char* field_content_type;
 extern const char* field_content_length;
 extern const char* field_accept;
 
+extern const char* status_ok_text;
+extern const char* status_no_content_text;
+extern const char* status_no_content_text;
+extern const char* status_bad_request_text;
+extern const char* status_forbidden_text;
+extern const char* status_not_found_text;
+extern const char* status_internal_server_error_text;
+extern const char* status_not_implemented_text;
+
 // Fields only include the fields required by the server to complete a response.
 typedef struct {
     http_method method;

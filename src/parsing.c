@@ -8,6 +8,17 @@ const char* field_content_type = "Content-Type: ";
 const char* field_content_length = "Content-Length: ";
 const char* field_accept = "Accept: ";
 
+const char* status_ok_text;
+const char* status_no_content_text;
+const char* status_no_content_text;
+const char* status_bad_request_text;
+const char* status_forbidden_text;
+const char* status_not_found_text;
+const char* status_internal_server_error_text;
+const char* status_not_implemented_text;
+
+static char* get_status_code(http_status_code status);
+
 int decode_http_request(char* buffer, http_request_frame *frame, size_t buffer_len){
     // buffer_len indicates the number of bytes that were read into the buffer.
     frame->header = malloc(sizeof(http_request_header_frame));
@@ -175,5 +186,38 @@ void free_http_fields(http_request_frame* frame){
 }
 
 char* encode_http_response(http_response_frame *frame){
-    
+    // Get length of the header.
+    // Status code 
+}
+
+// returns a char* that is NOT null terminated, but terminated with \r\n.
+static char* get_status_code(http_status_code status){
+    char* http_version = "HTTP/1.1 ";
+    size_t offset = strlen(http_version);
+    offset += 4; // 4 bytes for the 3 digit code in ascii and a space.
+    char code[64];
+    switch(status){
+    case STATUS_OK:
+        memcpy(code, "200", 3);
+        break;
+    case STATUS_NO_CONTENT:
+        memcpy(code, "204", 3);
+        break;
+    case STATUS_BAD_REQUEST:
+        memcpy(code, "400", 3);
+        break;
+    case STATUS_FORBIDDEN:
+        memcpy(code, "403", 3);
+        break;
+    case STATUS_NOT_FOUND:
+        memcpy(code, "404", 3);
+        break;
+    case STATUS_INTERNAL_SERVER_ERROR:
+        memcpy(code, "500", 3);
+        break;
+    case STATUS_NOT_IMPLEMENTED:
+        memcpy(code, "501", 3);
+        break;
+    }
+
 }
