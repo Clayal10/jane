@@ -100,7 +100,7 @@ void *http_handle_client(void *c){
     http_response_writer writer;
     writer.fd = client->fd;
 
-    size_t buffer_len = 1024*64; // 64 kb should be enough.
+    size_t buffer_len = 1024*1028*32; // 32 MB should be enough.
     char *buffer = malloc(buffer_len);
     int read_offset = 0;
     for(;;){
@@ -122,7 +122,7 @@ void *http_handle_client(void *c){
                 // If we need more data, add to the buffer and reprocess the whole thing.
                 // This applies if the payload is sent in a separate message from the header.
                 read_offset = count;
-                goto error;
+                continue;
             }
             bytes_processed += status;
             // we read and parsed a valid message, now we need to continue processing other messages
@@ -171,8 +171,8 @@ void http_write(http_response_writer* w, char* buffer){
     // 2. Write it to the socket.
 }
 
+// http_write_header will write an HTTP response without any content.
 void http_write_header(http_response_writer* w, http_status_code status_code){
-    // Essentially the same as http_write
     http_response_frame *resp = malloc(sizeof(http_response_frame));
     http_response_header_frame *header = malloc(sizeof(http_response_header_frame));
     header->status_code = status_code;
@@ -189,8 +189,11 @@ void http_write_header(http_response_writer* w, http_status_code status_code){
     header->date[n] = 0;
     resp->header = header;
     char* data = encode_http_response(resp);
-    // Write the data
+    if(!data){
+        return;
+    }
     write(w->fd, data, strlen(data));
+    free(data);
     free(resp->header->date);
     free(resp->header);
     free(resp);

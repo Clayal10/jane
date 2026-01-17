@@ -8,14 +8,13 @@ const char* field_content_type = "Content-Type: ";
 const char* field_content_length = "Content-Length: ";
 const char* field_accept = "Accept: ";
 
-const char* status_ok_text;
-const char* status_no_content_text;
-const char* status_no_content_text;
-const char* status_bad_request_text;
-const char* status_forbidden_text;
-const char* status_not_found_text;
-const char* status_internal_server_error_text;
-const char* status_not_implemented_text;
+const char* status_ok_text = "HTTP/1.1 200 OK\r\n";
+const char* status_no_content_text = "HTTP/1.1 204 No Content\r\n";
+const char* status_bad_request_text = "HTTP/1.1 400 Bad Request\r\n";
+const char* status_forbidden_text = "HTTP/1.1 403 Forbidden\r\n";
+const char* status_not_found_text = "HTTP/1.1 404 Not Found\r\n";
+const char* status_internal_server_error_text = "HTTP/1.1 500 Internal Server Error\r\n";
+const char* status_not_implemented_text = "HTTP/1.1 501 Not Implemented\r\n";
 
 static char* get_status_code(http_status_code status);
 
@@ -185,39 +184,50 @@ void free_http_fields(http_request_frame* frame){
     }
 }
 
+// Invalid frame fields will cause this function to return NULL. If not NULL,
+// you have the responsibility of freeing the response data.
 char* encode_http_response(http_response_frame *frame){
-    // Get length of the header.
-    // Status code 
-}
-
-// returns a char* that is NOT null terminated, but terminated with \r\n.
-static char* get_status_code(http_status_code status){
-    char* http_version = "HTTP/1.1 ";
-    size_t offset = strlen(http_version);
-    offset += 4; // 4 bytes for the 3 digit code in ascii and a space.
-    char code[64];
-    switch(status){
+    char* data = frame->header->content_length + 1024*8; // reserve max 8 KB for header
+    size_t status_code_length = 0;
+    switch(frame->header->status_code){
     case STATUS_OK:
-        memcpy(code, "200", 3);
+        status_code_length = strlen(status_ok_text);
+        memcpy(data, status_ok_text, status_code_length);
         break;
     case STATUS_NO_CONTENT:
-        memcpy(code, "204", 3);
+        status_code_length = strlen(status_no_content_text);
+        memcpy(data, status_no_content_text, status_code_length);
         break;
     case STATUS_BAD_REQUEST:
-        memcpy(code, "400", 3);
+        status_code_length = strlen(status_bad_request_text);
+        memcpy(data, status_bad_request_text, status_code_length);
         break;
     case STATUS_FORBIDDEN:
-        memcpy(code, "403", 3);
+        status_code_length = strlen(status_forbidden_text);
+        memcpy(data, status_forbidden_text, status_code_length);
         break;
     case STATUS_NOT_FOUND:
-        memcpy(code, "404", 3);
+        status_code_length = strlen(status_not_found_text);
+        memcpy(data, status_not_found_text, status_code_length);
         break;
     case STATUS_INTERNAL_SERVER_ERROR:
-        memcpy(code, "500", 3);
+        status_code_length = strlen(status_internal_server_error_text);
+        memcpy(data, status_internal_server_error_text, status_code_length);
         break;
     case STATUS_NOT_IMPLEMENTED:
-        memcpy(code, "501", 3);
+        status_code_length = strlen(status_not_implemented_text);
+        memcpy(data, status_not_implemented_text, status_code_length);
         break;
+    default:
+        return NULL;
     }
+    int offset = status_code_length;
 
+    
+    memcpy(&data[offset], "\r\n", 2);
+    offset += 2;
+    char* return_data = malloc(offset);
+    memcpy(return_data, data, offset);
+    free(data);
+    return return_data;
 }
